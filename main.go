@@ -15,14 +15,12 @@ import (
 
 // LabelData 定义标签数据
 type LabelData struct {
-	CompanyName string // TEMU物流单
-	ServiceType string // 邮政特快专递
-	PhoneNumber string // 13616578186xx
-	ItemNumber  string // 货号
-	Quantity    int    // 数量
-	// Description   string // 样本文本
-	TotalItems    int    // 共X件
-	Warehouse     string // 建邮店
+	ServiceType   string // 物流名称
+	PhoneNumber   string // 物流单号
+	ItemNumber    string // 货号
+	Quantity      int    // 商品数量
+	TotalItems    int    // 总件数
+	Warehouse     string // 店铺名称
 	ShippingCrate string // 收货仓
 	CurrentTime   string // 时间戳
 }
@@ -41,12 +39,10 @@ func main() {
 
 	// 使用示例数据，这些可以通过参数传入
 	data := LabelData{
-		CompanyName: "TEMU物流单",
-		ServiceType: "邮政特快专递",
-		PhoneNumber: "13616578186xx",
-		ItemNumber:  "8559",
-		Quantity:    8,
-		// Description:   "样本文本",
+		ServiceType:   "邮政特快专递",
+		PhoneNumber:   "13616578186xx",
+		ItemNumber:    "8559",
+		Quantity:      8,
 		TotalItems:    1,
 		Warehouse:     "建闽店",
 		ShippingCrate: "三水一产25号子仓",
@@ -134,7 +130,7 @@ func generateLogisticsLabel(data LabelData, outputPath string) string {
 
 	pdf.SetFont("NotoSansSC", "B", 16)
 	pdf.SetTextColor(255, 255, 255) // 白色文本
-	pdf.Text(32, 15, data.CompanyName)
+	pdf.Text(32, 15, "TEMU物流单")
 
 	pdf.SetFont("NotoSansSC", "B", 16)
 	pdf.SetTextColor(0, 0, 0) // 黑色文本
