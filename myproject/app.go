@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,7 +17,8 @@ import (
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx   context.Context
+	fonts embed.FS // 添加这一行，用于存储嵌入的字体
 }
 
 // LabelData 定义标签数据
@@ -40,6 +42,8 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	// 在启动时获取嵌入的字体
+	a.fonts = fonts
 }
 
 // ParseLogisticsInfo 解析物流信息文本
@@ -132,66 +136,28 @@ func (a *App) generateLogisticsLabel(data LabelData, outputPath string) string {
 		Size:           gofpdf.SizeType{Wd: PageWidth, Ht: PageHeight},
 		FontDirStr:     "",
 	})
-	pdf.AddPage()
 
-	// // 加载中文字体 - 使用应用内的字体
-	// execPath, err := os.Executable()
-	// if err != nil {
-	// 	runtime.LogError(a.ctx, fmt.Sprintf("获取可执行文件路径失败: %v", err))
-	// }
-
-	// appDir := filepath.Dir(execPath)
-	// fontPath := filepath.Join(appDir, "fonts")
-
-	// // 创建字体目录（如果不存在）
-	// err = os.MkdirAll(fontPath, 0755)
-	// if err != nil {
-	// 	runtime.LogError(a.ctx, fmt.Sprintf("创建字体目录失败: %v", err))
-	// }
-
-	// // 检查是否已经存在字体文件
-	// regularFont := filepath.Join(fontPath, "NotoSansSC-Regular.ttf")
-	// boldFont := filepath.Join(fontPath, "NotoSansSC-Bold.ttf")
-
-	// if _, err := os.Stat(regularFont); os.IsNotExist(err) {
-	// 	runtime.LogWarning(a.ctx, fmt.Sprintf("警告: 字体文件 %s 不存在，可能导致中文显示问题", regularFont))
-	// 	runtime.LogInfo(a.ctx, "请从 https://fonts.google.com/noto/specimen/Noto+Sans+SC 下载字体文件")
-
-	// 	// 使用内置字体作为替代
-	// 	pdf.SetFont("Arial", "", 12)
-	// } else {
-	// 	pdf.AddUTF8Font("NotoSansSC", "", regularFont)
-	// 	pdf.AddUTF8Font("NotoSansSC", "B", boldFont)
-	// }
-
-	// 从嵌入的文件系统中读取字体文件
-	regularFontData, err := fonts.ReadFile("fonts/NotoSansSC-Regular.ttf")
+	// 添加嵌入的中文字体
+	// 1. 从嵌入资源读取字体文件
+	regularFontBytes, err := a.fonts.ReadFile("fonts/NotoSansSC-Regular.ttf")
 	if err != nil {
 		runtime.LogError(a.ctx, fmt.Sprintf("读取常规字体文件失败: %v", err))
-		pdf.SetFont("Arial", "", 12)
-	} else {
-		// 创建临时文件来存储字体数据
-		regularTempFile, err := os.CreateTemp("", "regular-*.ttf")
-		if err == nil {
-			defer os.Remove(regularTempFile.Name())
-			if _, err := regularTempFile.Write(regularFontData); err == nil {
-				pdf.AddUTF8Font("NotoSansSC", "", regularTempFile.Name())
-			}
-		}
 	}
 
-	boldFontData, err := fonts.ReadFile("fonts/NotoSansSC-Bold.ttf")
+	boldFontBytes, err := a.fonts.ReadFile("fonts/NotoSansSC-Bold.ttf")
 	if err != nil {
 		runtime.LogError(a.ctx, fmt.Sprintf("读取粗体字体文件失败: %v", err))
-	} else {
-		boldTempFile, err := os.CreateTemp("", "bold-*.ttf")
-		if err == nil {
-			defer os.Remove(boldTempFile.Name())
-			if _, err := boldTempFile.Write(boldFontData); err == nil {
-				pdf.AddUTF8Font("NotoSansSC", "B", boldTempFile.Name())
-			}
-		}
 	}
+
+	// 2. 添加字体到PDF
+	pdf.AddUTF8FontFromBytes("NotoSansSC", "", regularFontBytes)
+
+	pdf.AddUTF8FontFromBytes("NotoSansSC", "B", boldFontBytes)
+
+	pdf.AddPage()
+
+	// 使用添加的中文字体
+	pdf.SetFont("NotoSansSC", "", 12)
 
 	// 设置外边框
 	pdf.SetLineWidth(0.5)
@@ -201,15 +167,15 @@ func (a *App) generateLogisticsLabel(data LabelData, outputPath string) string {
 	pdf.SetFillColor(0, 0, 0) // 黑色背景
 	pdf.Rect(30, 8, 40, 10, "F")
 
-	pdf.SetFont("NotoSansSC", "B", 16)
-	pdf.SetTextColor(255, 255, 255) // 白色文本
+	pdf.SetFont("NotoSansSC", "B", 16) // 使用粗体
+	pdf.SetTextColor(255, 255, 255)    // 白色文本
 	pdf.Text(32, 15, "TEMU物流单")
 
-	pdf.SetFont("NotoSansSC", "B", 16)
-	pdf.SetTextColor(0, 0, 0) // 黑色文本
+	pdf.SetFont("NotoSansSC", "B", 16) // 使用粗体
+	pdf.SetTextColor(0, 0, 0)          // 黑色文本
 	pdf.Text(15, 25, data.ServiceType)
 
-	pdf.SetFont("NotoSansSC", "", 22)
+	pdf.SetFont("NotoSansSC", "", 22) // 普通样式
 	pdf.Text(25, 35, data.PhoneNumber)
 
 	// 第二部分：货物信息表格
@@ -226,12 +192,12 @@ func (a *App) generateLogisticsLabel(data LabelData, outputPath string) string {
 	pdf.Text(70, 46, "数量/双")
 
 	// 表格内容
-	pdf.SetFont("NotoSansSC", "B", 18)
+	pdf.SetFont("NotoSansSC", "B", 18) // 使用粗体
 	pdf.Text(20, 57, data.ItemNumber)
 	pdf.Text(70, 57, strconv.Itoa(data.Quantity))
 
 	// 第三部分：件数
-	pdf.SetFont("NotoSansSC", "B", 16)
+	pdf.SetFont("NotoSansSC", "B", 16) // 使用粗体
 	pdf.Text(8, 76, fmt.Sprintf("共%d件", data.TotalItems))
 	// 店铺
 	pdf.SetFont("NotoSansSC", "", 16)
@@ -242,7 +208,7 @@ func (a *App) generateLogisticsLabel(data LabelData, outputPath string) string {
 	pdf.Text(12, 86, fmt.Sprintf("收货仓: %s", data.ShippingCrate))
 	pdf.Text(10, 93, data.CurrentTime)
 
-	// 获取用户主目录
+	// 生成文件路径和保存逻辑保持不变
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		runtime.LogError(a.ctx, fmt.Sprintf("获取用户主目录失败: %v", err))
@@ -261,7 +227,6 @@ func (a *App) generateLogisticsLabel(data LabelData, outputPath string) string {
 	timestamp := time.Now().Format("20060102-150405")
 	fileName := fmt.Sprintf("logistics_label_%s.pdf", timestamp)
 	outputPath = filepath.Join(appFolder, fileName)
-	// outputPath = filepath.Join(appDir, outputPath)
 
 	err = pdf.OutputFileAndClose(outputPath)
 	if err != nil {

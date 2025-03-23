@@ -18,6 +18,8 @@ var fonts embed.FS
 func main() {
 	// 创建一个新的应用实例
 	app := NewApp()
+	// 设置嵌入的字体
+	app.fonts = fonts
 
 	// 创建应用配置
 	err := wails.Run(&options.App{
