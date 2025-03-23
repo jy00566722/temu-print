@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jung-kurt/gofpdf"
@@ -283,7 +284,48 @@ func (a *App) printPDF(pdfPath string) error {
 
 // OpenPDF 打开生成的PDF文件
 func (a *App) OpenPDF(pdfPath string) {
-	// 使用 runtime.Browser 打开 PDF 文件
-	runtime.BrowserOpenURL(a.ctx, "file://"+pdfPath)
+	// 确保使用绝对路径
+	absPath, err := filepath.Abs(pdfPath)
+	if err != nil {
+		runtime.LogError(a.ctx, fmt.Sprintf("获取绝对路径失败: %v", err))
+		return
+	}
 
+	// Windows系统需要确保路径格式正确
+	if os.Getenv("GOOS") == "windows" {
+		// 确保路径使用正斜杠，并添加前导斜杠
+		absPath = strings.ReplaceAll(absPath, "\\", "/")
+		if !strings.HasPrefix(absPath, "/") {
+			absPath = "/" + absPath
+		}
+	}
+
+	// 构建正确的 file:// URL
+	fileURL := "file://" + absPath
+
+	// 打开 PDF 文件
+	runtime.LogInfo(a.ctx, fmt.Sprintf("正在打开文件: %s", fileURL))
+	runtime.BrowserOpenURL(a.ctx, fileURL)
+	// if err != nil {
+	// 	runtime.LogError(a.ctx, fmt.Sprintf("打开PDF文件失败: %v", err))
+
+	// 	// 备选方案：使用系统命令打开
+	// 	var cmd *exec.Cmd
+	// 	switch os.Getenv("GOOS") {
+	// 	case "windows":
+	// 		cmd = exec.Command("cmd", "/c", "start", absPath)
+	// 	case "darwin":
+	// 		cmd = exec.Command("open", absPath)
+	// 	case "linux":
+	// 		cmd = exec.Command("xdg-open", absPath)
+	// 	default:
+	// 		runtime.LogError(a.ctx, "不支持的操作系统")
+	// 		return
+	// 	}
+
+	// 	err = cmd.Run()
+	// 	if err != nil {
+	// 		runtime.LogError(a.ctx, fmt.Sprintf("使用系统命令打开文件失败: %v", err))
+	// 	}
+	// }
 }

@@ -20,7 +20,7 @@ function App() {
   const [totalItems, setTotalItems] = useState(1);
   const [warehouse, setWarehouse] = useState('建闽店');
   const [shippingCrate, setShippingCrate] = useState('');
-  const [autoPrint, setAutoPrint] = useState(true);
+  const [autoPrint, setAutoPrint] = useState(false);
   const [message, setMessage] = useState('');
   const [pdfPath, setPdfPath] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -65,7 +65,9 @@ function App() {
       
       const result = await GenerateAndPrintLabel(data, autoPrint);
       setMessage(result);
-      setPdfPath(result.includes('标签已生成') ? 'logistics_label.pdf' : '');
+      // 从返回结果中提取PDF文件路径
+      const pdfPathMatch = result.match(/标签已生成: (.+\.pdf)/);
+      setPdfPath(pdfPathMatch ? pdfPathMatch[1] : '');
     } catch (error) {
       setMessage(`生成失败: ${error}`);
     } finally {
