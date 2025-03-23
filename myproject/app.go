@@ -52,10 +52,10 @@ func (a *App) ParseLogisticsInfo(text string) map[string]interface{} {
 	result := make(map[string]interface{})
 
 	// 提取物流名称和单号
-	logisticsPattern := regexp.MustCompile(`(?:物流单号：|邮政|快递|物流).*?[,，]?\s*(\S+)[,，]\s*(\d+)`)
+	logisticsPattern := regexp.MustCompile(`物流单号：\s*[\n]?\s*([^，,\n]+)[，,]?\s*([A-Za-z0-9]+)`)
 	if matches := logisticsPattern.FindStringSubmatch(text); len(matches) >= 3 {
-		result["serviceType"] = matches[1]
-		result["phoneNumber"] = matches[2]
+		result["serviceType"] = strings.TrimSpace(matches[1])
+		result["phoneNumber"] = strings.TrimSpace(matches[2])
 	}
 
 	// 提取货号
