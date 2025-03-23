@@ -1,0 +1,13 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "myproject",
+  "outputfilename": "myproject",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm build",
+  "frontend:dev:watcher": "pnpm dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "jy00566722",
+    "email": "jy00566723@gmail.com"
+  }
+}
